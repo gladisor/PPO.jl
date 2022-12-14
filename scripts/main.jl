@@ -113,8 +113,7 @@ function sarts(traj::CircularArraySARTTrajectory)
     return (s, a, r, t, s′)
 end
 
-
-path = "ppo_entropy"
+path = "ppo_test"
 
 ppo = PPO(
     actor = Actor(3, 64, 1, a_lim = 2.0f0),
@@ -174,7 +173,7 @@ for iteration ∈ 1:100
 
                 δ = (δ .- mean(δ)) ./ std(δ)
 
-                loss = -mean(min.(ratio .* δ, clamp.(ratio, 0.9f0, 1.1f0) .* δ)) + mean((1 .- ratio) .^ 2) + mean(log.(p_a) ./ old_p_a) * 0.0001
+                loss = -mean(min.(ratio .* δ, clamp.(ratio, 0.9f0, 1.1f0) .* δ)) + mean((1 .- ratio) .^ 2) + mean(ratio .* log.(p_a)) * 0.001
 
                 Flux.ignore() do 
                     ppo.actor_loss = loss
@@ -195,6 +194,7 @@ for iteration ∈ 1:100
 
     savefig(plot(actor_loss, label = false), joinpath(path, "actor_loss"))
     savefig(plot(critic_loss, label = false), joinpath(path, "critic_loss"))
+    savefig(plot(hook.rewards, label = false), joinpath(path, "rewards"))
 
     if iteration % 10 == 0
         run(ppo, env, StopWhenDone(), Render(path = joinpath(path, "animations/vid_$iteration.mp4")))
